@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Firebase Authentication</title>
+    <script src="https://www.gstatic.com/firebasejs/5.2.0/firebase.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+</head>
+<body>
+    <div id="app">
+        <h1>Vue School - Firebase Authentication</h1>
+        <div v-if="authUser">
+            <h2>Signed in as {{authUser.email}}</h2>
+            <img :src="authUser.photoURL" height="150">
+            <p>What's up, {{authUser.displayName || 'friend'}}?</p>
+            <button @click="signOut">Sign out</button>
+
+            <form @submit.prevent="updateProfile">
+                <h2>Update Profile</h2>
+                <input v-model="displayName" placeholder="Your name">
+                <input v-model="photoURL" placeholder="Your photo url">
+                <button>Update</button>
+            </form>
+        </div>
+
+        <div v-else>
+            <form @submit.prevent="register">
+                <h2>Register</h2>
+                <input type="email" v-model="email" placeholder="Type your email">
+                <input type="password" v-model="password" placeholder="Pick your password">
+                <button>Register</button>
+            </form>
+
+            <form @submit.prevent="signIn">
+                <h2>Sign in</h2>
+                <input type="email" v-model="email" placeholder="Type your email">
+                <input type="password" v-model="password" placeholder="Pick your password">
+                <button>Sign In</button>
+            </form>
+
+            <div>
+                <h2>Sign in with Google</h2>
+                <button @click="signInWithGoogle">Sign In</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Initialize Firebase
+        var config = {
+            apiKey: "AIzaSyBmGPLAlOULgGdwy0bBHSz8fKUBVkBqJ9E",
+            authDomain: "vueschool-firebase-4f282.firebaseapp.com",
+            databaseURL: "https://vueschool-firebase-4f282.firebaseio.com",
+            projectId: "vueschool-firebase-4f282",
+            storageBucket: "vueschool-firebase-4f282.appspot.com",
+            messagingSenderId: "378684237630"
+        };
+        firebase.initializeApp(config);
+
+        new Vue({
+            el: '#app',
+
+            data: {
+                email: '',
+                password: '',
+                authUser: null,
+                displayName: null,
+                photoURL: null
+            },
+
+            methods: {
+                register () {
+                    firebase.auth().createUserWithEmailAndPassword(this.email, this.password)
+                        .catch(error => alert(':( ' + error.message))
+                },
+
+                signOut () {
+                    firebase.auth().signOut()
+                },
+
+                signIn () {
+                    firebase.auth().signInWithEmailAndPassword(this.email, this.password)
+                        .catch(error => alert(':( ' + error.message))
+                },
+
+                signInWithGoogle () {
+                    const provider = new firebase.auth.GoogleAuthProvider();
+                    firebase.auth().signInWithPopup(provider)
+                        .catch(error => alert(':( ' + error.message))
+                        .then(data => console.log(data.user, data.credential.accessToken))
+                },
+
+                updateProfile () {
+                    this.authUser.updateProfile({
+                      displayName: this.displayName,
+                      photoURL: this.photoURL
+                    })
+                }
+            },
+
+            created () {
+                firebase.auth().onAuthStateChanged( user => {
+                    this.authUser = user;
+                    if (user) {
+                        this.displayName = user.displayName;
+                        this.photoURL = user.photoURL;
+                    }
+                }) // Observer
+            }
+        });
+    </script>
+</body>
+</html>
