@@ -4,21 +4,38 @@
     <meta charset="UTF-8">
     <title>Firebase Authentication</title>
     <script src="https://www.gstatic.com/firebasejs/5.2.0/firebase.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+    <script src="https://unpkg.com/vue"></script>
 </head>
 <body>
     <div id="app">
         <h1>Vue School - Firebase Authentication</h1>
         <div v-if="authUser">
-            <h2>Signed in as {{authUser.email}}</h2>
+            <h2>Signed in as {{authUser.email}}
+                <img v-if="linkedGoogle" src="https://www.gstatic.com/mobilesdk/160512_mobilesdk/auth_service_google.svg" alt="">
+                <img v-if="linkedPassword" src="https://www.gstatic.com/mobilesdk/160409_mobilesdk/images/auth_service_email.svg" alt="">
+            </h2>
             <img :src="authUser.photoURL" height="150">
             <p>What's up, {{authUser.displayName || 'friend'}}?</p>
             <button @click="signOut">Sign out</button>
+            <button v-if="!linkedGoogle" @click="linkGoogle">Link Google Account</button>
+            <button v-else @click="unlinkGoogle">Unlink Google Account</button>
 
             <form @submit.prevent="updateProfile">
                 <h2>Update Profile</h2>
                 <input v-model="displayName" placeholder="Your name">
                 <input v-model="photoURL" placeholder="Your photo url">
+                <button>Update</button>
+            </form>
+
+            <form @submit.prevent="updateEmail">
+                <h2>Update Email</h2>
+                <input v-model="email" placeholder="Your email">
+                <button>Update</button>
+            </form>
+
+            <form @submit.prevent="updatePassword">
+                <h2>Update Password</h2>
+                <input type="password" v-model="newPassword" placeholder="Your password">
                 <button>Update</button>
             </form>
         </div>
@@ -64,7 +81,18 @@
                 password: '',
                 authUser: null,
                 displayName: null,
-                photoURL: null
+                photoURL: null,
+                newPassword: null
+            },
+
+            computed: {
+                linkedGoogle () {
+                    return !!this.authUser.providerData.find(provider => provider.providerId === 'google.com')
+                },
+
+                linkedPassword () {
+                    return !!this.authUser.providerData.find(provider => provider.providerId === 'password')
+                }
             },
 
             methods: {
@@ -89,11 +117,32 @@
                         .then(data => console.log(data.user, data.credential.accessToken))
                 },
 
+                linkGoogle () {
+                    const provider = new firebase.auth.GoogleAuthProvider();
+                    this.authUser.linkWithPopup(provider)
+                        .catch(error => alert(':( ' + error.message))
+                },
+
+                unlinkGoogle () {
+                    this.authUser.unlink('google.com')
+                },
+
                 updateProfile () {
                     this.authUser.updateProfile({
                       displayName: this.displayName,
                       photoURL: this.photoURL
                     })
+                },
+
+                updateEmail () {
+                    this.authUser.updateEmail(this.email)
+                        .catch(error => alert(':( ' + error.message))
+                },
+
+                updatePassword () {
+                    this.authUser.updatePassword(this.newPassword)
+                        .then(() => {this.newPassword = null})
+                        .catch(error => alert(':( ' + error.message))
                 }
             },
 
@@ -103,6 +152,7 @@
                     if (user) {
                         this.displayName = user.displayName;
                         this.photoURL = user.photoURL;
+                        this.email = user.email;
                     }
                 }) // Observer
             }
