@@ -15,7 +15,7 @@
                 <img v-if="linkedPassword" src="https://www.gstatic.com/mobilesdk/160409_mobilesdk/images/auth_service_email.svg" alt="">
             </h2>
             <img :src="authUser.photoURL" height="150">
-            <p>What's up, {{authUser.displayName || 'friend'}}?</p>
+            <p>Hi, {{authUser.displayName || 'friend'}}, we know you like {{authUser.favoriteFood}}.</p>
             <button @click="signOut">Sign out</button>
             <button v-if="!linkedGoogle" @click="linkGoogle">Link Google Account</button>
             <button v-else @click="unlinkGoogle">Unlink Google Account</button>
@@ -24,6 +24,12 @@
                 <h2>Update Profile</h2>
                 <input v-model="displayName" placeholder="Your name">
                 <input v-model="photoURL" placeholder="Your photo url">
+                <button>Update</button>
+            </form>
+
+            <form @submit.prevent="updateCustomDetails">
+                <h2>Update Aditional Details</h2>
+                <input v-model="favoriteFood" placeholder="Your favorite food">
                 <button>Update</button>
             </form>
 
@@ -82,7 +88,8 @@
                 authUser: null,
                 displayName: null,
                 photoURL: null,
-                newPassword: null
+                newPassword: null,
+                favoriteFood: null
             },
 
             computed: {
@@ -143,6 +150,11 @@
                     this.authUser.updatePassword(this.newPassword)
                         .then(() => {this.newPassword = null})
                         .catch(error => alert(':( ' + error.message))
+                },
+
+                updateCustomDetails () {
+                    firebase.database().ref('users').child(this.authUser.uid)
+                        .update({favoriteFood: this.favoriteFood})
                 }
             },
 
@@ -153,6 +165,12 @@
                         this.displayName = user.displayName;
                         this.photoURL = user.photoURL;
                         this.email = user.email;
+                        firebase.database().ref('users').child(user.uid).once('value', snapshot => {
+                            if (snapshot.val()) {
+                                this.favoriteFood = snapshot.val().favoriteFood;
+                                Vue.set(this.authUser, 'favoriteFood', this.favoriteFood)
+                            }
+                        })
                     }
                 }) // Observer
             }
